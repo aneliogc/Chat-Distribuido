@@ -1,0 +1,34 @@
+### Use a extensão REST Client (VS Code) ou copie os comandos curl equivalentes
+
+@host = http://localhost:5001
+
+### Health check
+GET {{host}}/health
+
+### Registrar usuário
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "alice@example.com",
+  "password": "senha123"
+}
+
+### Login
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "alice",
+  "password": "senha123"
+}
+
+### Me (token vem do login acima)
+GET {{host}}/api/auth/me
+Authorization: Bearer {{login.response.body.token}}
+
+### Listar usuários (excluindo o próprio)
+GET {{host}}/api/auth/users
+Authorization: Bearer {{login.response.body.token}}

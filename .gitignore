@@ -1,0 +1,39 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+
+# Node / Expo
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+npm-debug.*
+yarn-error.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Env / segredos
+.env
+.env.local
+*.local
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Testes / cobertura
+coverage/
+TestResults/
+*.trx

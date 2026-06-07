@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chat
+      POSTGRES_PASSWORD: chat
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat -d authdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sd-net
+
+  authservice:
+    build:
+      context: ./backend/AuthService
+      dockerfile: Dockerfile
+    container_name: sd-authservice
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=authdb;Username=chat;Password=chat"
+      Jwt__Issuer: "sd-chat-auth"
+      Jwt__Audience: "sd-chat-clients"
+      Jwt__Secret: "super-secret-key-change-me-please-32chars-min"
+      Jwt__ExpiresInMinutes: "120"
+    ports:
+      - "5001:8080"
+    networks:
+      - sd-net
+
+volumes:
+  postgres_data:
+
+networks:
+  sd-net:
+    driver: bridge

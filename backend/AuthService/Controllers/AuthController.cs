@@ -18,12 +18,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto dto, CancellationToken ct)
+    public async Task<ActionResult<UserSummaryDto>> Register([FromBody] RegisterDto dto, CancellationToken ct)
     {
         try
         {
             var res = await _auth.RegisterAsync(dto, ct);
-            return Created($"/api/auth/users/{res.UserId}", res);
+            return Created($"/api/auth/users/{res.Id}", res);
         }
         catch (InvalidOperationException ex)
         {

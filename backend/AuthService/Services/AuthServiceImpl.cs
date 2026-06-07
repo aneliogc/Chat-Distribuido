@@ -16,7 +16,7 @@ public class AuthServiceImpl : IAuthService
         _jwt = jwt;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
+    public async Task<UserSummaryDto> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
         var username = dto.Username.Trim();
         var email = dto.Email.Trim().ToLowerInvariant();
@@ -35,8 +35,7 @@ public class AuthServiceImpl : IAuthService
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
 
-        var (token, expiresAt) = _jwt.Generate(user);
-        return new AuthResponseDto(user.Id, user.Username, user.Email, token, expiresAt);
+        return new UserSummaryDto(user.Id, user.Username, user.Email);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto, CancellationToken ct = default)

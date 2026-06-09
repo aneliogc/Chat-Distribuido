@@ -4,6 +4,29 @@ x-jwt-config: &jwt-config
   Jwt__Audience: "sd-chat-clients"
   Jwt__Secret: "super-secret-key-change-me-please-32chars-min"
 
+# Config base compartilhada pelas replicas do ChatService. Todas as replicas sao
+# IDENTICAS (mesma imagem, mesma config) -- e justamente isso que permite o Nginx
+# balancear carga entre elas. Cada uma so se diferencia pelo container_name.
+x-chatservice: &chatservice-base
+  build:
+    context: ./backend/ChatService
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  depends_on:
+    mongo:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  environment:
+    <<: *jwt-config
+    ASPNETCORE_ENVIRONMENT: Development
+    ASPNETCORE_URLS: http://+:8080
+    Mongo__ConnectionString: "mongodb://mongo:27017"
+    Mongo__Database: "chatdb"
+    Redis__ConnectionString: "redis:6379"
+  networks:
+    - sd-net
+
 services:
   # ---------- Bancos / infraestrutura ----------
   postgres:
@@ -77,26 +100,35 @@ services:
     networks:
       - sd-net
 
-  chatservice:
-    build:
-      context: ./backend/ChatService
-      dockerfile: Dockerfile
-    container_name: sd-chatservice
+  # 3 replicas identicas do ChatService. Nao tem porta publica: quem fala com
+  # o mundo e o Nginx. Sem container_name fixo no servico (cada uma define o seu)
+  # justamente para podermos rodar varias.
+  chatservice1:
+    <<: *chatservice-base
+    container_name: sd-chatservice-1
+
+  chatservice2:
+    <<: *chatservice-base
+    container_name: sd-chatservice-2
+
+  chatservice3:
+    <<: *chatservice-base
+    container_name: sd-chatservice-3
+
+  # Load balancer: unica porta publica do chat (5002 -> 80 do Nginx).
+  # Distribui as requisicoes entre as 3 replicas (ver infra/nginx/nginx.conf).
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sd-nginx
     restart: unless-stopped
     depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      <<: *jwt-config
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
-      Mongo__ConnectionString: "mongodb://mongo:27017"
-      Mongo__Database: "chatdb"
-      Redis__ConnectionString: "redis:6379"
+      - chatservice1
+      - chatservice2
+      - chatservice3
     ports:
-      - "5002:8080"
+      - "5002:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - sd-net
 

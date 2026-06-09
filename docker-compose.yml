@@ -1,4 +1,11 @@
+# Config JWT compartilhada pelos dois microsservicos (uma fonte unica da verdade).
+x-jwt-config: &jwt-config
+  Jwt__Issuer: "sd-chat-auth"
+  Jwt__Audience: "sd-chat-clients"
+  Jwt__Secret: "super-secret-key-change-me-please-32chars-min"
+
 services:
+  # ---------- Bancos / infraestrutura ----------
   postgres:
     image: postgres:16-alpine
     container_name: sd-postgres
@@ -19,6 +26,37 @@ services:
     networks:
       - sd-net
 
+  mongo:
+    image: mongo:7
+    container_name: sd-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sd-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: sd-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sd-net
+
+  # ---------- Microsservicos ----------
   authservice:
     build:
       context: ./backend/AuthService
@@ -29,20 +67,42 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      <<: *jwt-config
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=authdb;Username=chat;Password=chat"
-      Jwt__Issuer: "sd-chat-auth"
-      Jwt__Audience: "sd-chat-clients"
-      Jwt__Secret: "super-secret-key-change-me-please-32chars-min"
       Jwt__ExpiresInMinutes: "120"
     ports:
       - "5001:8080"
     networks:
       - sd-net
 
+  chatservice:
+    build:
+      context: ./backend/ChatService
+      dockerfile: Dockerfile
+    container_name: sd-chatservice
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      <<: *jwt-config
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Mongo__ConnectionString: "mongodb://mongo:27017"
+      Mongo__Database: "chatdb"
+      Redis__ConnectionString: "redis:6379"
+    ports:
+      - "5002:8080"
+    networks:
+      - sd-net
+
 volumes:
   postgres_data:
+  mongo_data:
 
 networks:
   sd-net:

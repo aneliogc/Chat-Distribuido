@@ -20,10 +20,13 @@ yarn-error.log
 .vscode/
 *.swp
 
-# Env / segredos
+# Env 
 .env
 .env.local
 *.local
+
+# Notas internas
+roadmap.md
 
 # OS
 Thumbs.db

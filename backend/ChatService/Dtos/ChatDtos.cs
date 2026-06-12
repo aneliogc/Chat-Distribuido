@@ -17,7 +17,7 @@ public record ConversationDto(
     string Type,
     string? Name,
     IReadOnlyList<ParticipantDto> Participants,
-    DateTime LastMessageAt);
+    DateTime? LastMessageAt);
 
 /// <summary>Metodos para converter os modelos do Mongo nos DTOs do cliente.</summary>
 public static class ChatMappings

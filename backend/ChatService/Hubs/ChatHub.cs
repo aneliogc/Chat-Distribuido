@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ChatService.Data;
 using ChatService.Dtos;
 using ChatService.Models;
+using ChatService.Realtime;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
@@ -16,11 +17,43 @@ namespace ChatService.Hubs;
 public class ChatHub : Hub
 {
     private readonly IChatRepository _repo;
+    private readonly PresenceTracker _presence;
 
-    public ChatHub(IChatRepository repo)
+    public ChatHub(IChatRepository repo, PresenceTracker presence)
     {
         _repo = repo;
+        _presence = presence;
     }
+
+    /// <summary>
+    /// Quando uma conexao abre, registra a presenca. Se foi a 1a conexao do
+    /// usuario (estava offline), avisa TODOS os clientes que ele ficou online.
+    /// </summary>
+    public override async Task OnConnectedAsync()
+    {
+        var userId = Context.UserIdentifier;
+        if (userId is not null && await _presence.ConnectedAsync(userId))
+            await Clients.All.SendAsync("UserOnline", userId);
+
+        await base.OnConnectedAsync();
+    }
+
+    /// <summary>
+    /// Quando a conexao fecha, baixa a presenca. Se era a ultima conexao do
+    /// usuario, avisa TODOS que ele ficou offline. (Clients.All passa pelo
+    /// Redis, entao chega a quem estiver em outra replica.)
+    /// </summary>
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var userId = Context.UserIdentifier;
+        if (userId is not null && await _presence.DisconnectedAsync(userId))
+            await Clients.All.SendAsync("UserOffline", userId);
+
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    /// <summary>Snapshot inicial: quem esta online agora (o cliente chama ao conectar).</summary>
+    public Task<string[]> GetOnlineUsers() => _presence.GetOnlineAsync();
 
     /// <summary>Identidade do usuario conectado, extraida do JWT.</summary>
     private Participant CurrentUser()

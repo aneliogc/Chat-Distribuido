@@ -104,6 +104,7 @@ export default function NewConversationScreen({ navigation }) {
         conversationId: conv.id,
         title: conv.name || name,
         isGroup: true,
+        participants: conv.participants,
       });
     } catch (e) {
       setError(e.message);

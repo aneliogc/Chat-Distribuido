@@ -24,6 +24,5 @@ public class Conversation
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Atualizado a cada mensagem, para ordenar a lista de conversas.</summary>
-    public DateTime LastMessageAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastMessageAt { get; set; }
 }

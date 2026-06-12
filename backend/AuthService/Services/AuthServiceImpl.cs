@@ -45,7 +45,7 @@ public class AuthServiceImpl : IAuthService
             u => u.Username == dto.UsernameOrEmail.Trim() || u.Email == key, ct);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Invalid credentials.");
+            throw new UnauthorizedAccessException("Usuário ou senha inválidos.");
 
         var (token, expiresAt) = _jwt.Generate(user);
         return new AuthResponseDto(user.Id, user.Username, user.Email, token, expiresAt);

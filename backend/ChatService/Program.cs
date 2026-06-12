@@ -22,7 +22,16 @@ if (!string.IsNullOrWhiteSpace(redisConn))
     // Com Redis, varias replicas compartilham as conexoes.
     signalR.AddStackExchangeRedis(redisConn, options =>
         options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal("sd-chat"));
+
+    // Conexao Redis "crua" para o PresenceTracker (presenca compartilhada entre replicas).
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(
+        _ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
 }
+
+// Rastreio de presenca (quem esta online). Usa Redis se disponivel; senao, memoria.
+builder.Services.AddSingleton<ChatService.Realtime.PresenceTracker>(sp =>
+    new ChatService.Realtime.PresenceTracker(
+        sp.GetService<StackExchange.Redis.IConnectionMultiplexer>()));
 
 // Liga cada conexao SignalR ao userId do JWT (para Clients.Users(...)).
 builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();

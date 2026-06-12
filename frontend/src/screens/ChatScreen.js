@@ -17,10 +17,22 @@ function formatTime(iso) {
   return `${d.toLocaleDateString([], { day: '2-digit', month: '2-digit' })} ${hhmm}`;
 }
 
+function participantsLabel(participants) {
+  const names = (participants || []).map((p) => p.username);
+  if (names.length === 0) return '';
+  const shown = names.slice(0, 5).join(', ');
+  return names.length > 5 ? `${shown}, ...` : shown;
+}
+
 export default function ChatScreen({ route, navigation }) {
-  const { conversationId, title, isGroup } = route.params;
+  const { conversationId, title, isGroup, participants } = route.params;
   const { session } = useAuth();
-  const { connection, status } = useRealtime();
+  const { connection, status, isOnline } = useRealtime();
+
+  // Em conversa direta, o "outro" participante (para mostrar a presenca dele).
+  const otherId = isGroup
+    ? null
+    : (participants || []).find((p) => p.userId !== session.userId)?.userId;
 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -104,10 +116,14 @@ export default function ChatScreen({ route, navigation }) {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
-          <Text style={styles.headerStatus}>
-            {status === 'connected' ? 'online'
-              : status === 'connecting' ? 'conectando...'
-              : 'offline'}
+          <Text style={styles.headerStatus} numberOfLines={1}>
+            {isGroup
+              ? participantsLabel(participants)
+              // Se MINHA conexao esta caida, nem da pra saber do outro.
+              : status !== 'connected'
+                ? (status === 'connecting' ? 'conectando...' : 'offline')
+                // Conectado: mostra a presenca real do outro participante.
+                : isOnline(otherId) ? 'online' : 'offline'}
           </Text>
         </View>
         <View style={styles.backBtn} />

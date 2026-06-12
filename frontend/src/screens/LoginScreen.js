@@ -59,7 +59,7 @@ export default function LoginScreen({ navigation, route }) {
           <Text style={styles.inputIcon}>👤</Text>
           <TextInput
             style={styles.input}
-            placeholder="Digite seu usuario ou senha"
+            placeholder="Digite seu usuario ou e-mail"
             placeholderTextColor="#475569"
             autoCapitalize="none"
             value={usernameOrEmail}
@@ -82,6 +82,8 @@ export default function LoginScreen({ navigation, route }) {
             placeholderTextColor="#475569"
             secureTextEntry={!showPassword}
             value={password}
+            autoCapitalize="none"
+            autoCorrect={false}
             onChangeText={setPassword}
             onFocus={() => setFocusedField('pass')}
             onBlur={() => setFocusedField(null)}

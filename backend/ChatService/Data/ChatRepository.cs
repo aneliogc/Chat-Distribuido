@@ -28,8 +28,7 @@ public class ChatRepository : IChatRepository
         {
             Type = ConversationType.Direct,
             Participants = new List<Participant> { me, other },
-            CreatedAt = DateTime.UtcNow,
-            LastMessageAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         await _ctx.Conversations.InsertOneAsync(conversation, cancellationToken: ct);
@@ -43,8 +42,7 @@ public class ChatRepository : IChatRepository
             Type = ConversationType.Group,
             Name = name,
             Participants = participants.ToList(),
-            CreatedAt = DateTime.UtcNow,
-            LastMessageAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         await _ctx.Conversations.InsertOneAsync(conversation, cancellationToken: ct);
@@ -60,7 +58,10 @@ public class ChatRepository : IChatRepository
 
     public async Task<IReadOnlyList<Conversation>> GetConversationsForUserAsync(Guid userId, CancellationToken ct = default)
     {
-        var filter = Builders<Conversation>.Filter.ElemMatch(c => c.Participants, p => p.UserId == userId);
+        // So lista conversas que ja tem mensagem (LastMessageAt preenchido).
+        var filter = Builders<Conversation>.Filter.And(
+            Builders<Conversation>.Filter.ElemMatch(c => c.Participants, p => p.UserId == userId),
+            Builders<Conversation>.Filter.Ne(c => c.LastMessageAt, null));
         return await _ctx.Conversations
             .Find(filter)
             .SortByDescending(c => c.LastMessageAt)

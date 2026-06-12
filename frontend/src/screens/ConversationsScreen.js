@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRealtime } from '../realtime/RealtimeContext';
 import { getConversations } from '../api/chat';
 import GroupIcon from '../components/GroupIcon';
+import PlusIcon  from '../components/PlusIcon';
 
 // Nome a exibir na lista:
 // - Grupo  -> o nome do grupo.
@@ -64,13 +65,18 @@ export default function ConversationsScreen({ navigation }) {
     return unsub;
   }, [navigation, load]);
 
-  // Tempo real: se alguem iniciar uma conversa/grupo enquanto esta tela
-  // esta aberta, ela aparece sem precisar atualizar na mao.
+  // Tempo real: recarrega quando uma conversa e criada OU quando chega uma
+  // mensagem. A 1a mensagem faz a conversa "aparecer" na lista (antes disso
+  // ela fica oculta); as mensagens seguintes so reordenam pelo mais recente.
   useEffect(() => {
     if (!connection) return;
-    const onCreated = () => load();
-    connection.on('ConversationCreated', onCreated);
-    return () => connection.off('ConversationCreated', onCreated);
+    const reload = () => load();
+    connection.on('ConversationCreated', reload);
+    connection.on('ReceiveMessage', reload);
+    return () => {
+      connection.off('ConversationCreated', reload);
+      connection.off('ReceiveMessage', reload);
+    };
   }, [connection, load]);
 
   function renderItem({ item }) {
@@ -83,6 +89,7 @@ export default function ConversationsScreen({ navigation }) {
           conversationId: item.id,
           title: name,
           isGroup: item.type === 'Group',
+          participants: item.participants,
         })}
       >
         <View style={[styles.avatar, item.type === 'Group' && styles.avatarGroup]}>
@@ -108,17 +115,10 @@ export default function ConversationsScreen({ navigation }) {
       {/* Cabecalho fixo */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Conversas</Text>
-          <Text style={styles.headerSub}>Ola, {session.username}</Text>
+          <Text style={styles.headerTitle}>Suas conversas</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.newBtn}
-            onPress={() => navigation.navigate('NewConversation')}
-          >
-            <Text style={styles.newBtnText}>+</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={signOut} >
             <Text style={styles.logoutText}>Sair</Text>
           </TouchableOpacity>
         </View>
@@ -158,6 +158,12 @@ export default function ConversationsScreen({ navigation }) {
           }
         />
       )}
+      <TouchableOpacity
+        style={styles.newBtn}
+        onPress={() => navigation.navigate('NewConversation')}
+      >
+        <PlusIcon size={25} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -177,24 +183,25 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#f1f5f9' },
-  headerSub: { fontSize: 13, color: '#64748b', marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
   newBtn: {
-    width: 36,
-    height: 36,
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 50,
+    height: 50,
     borderRadius: 18,
     backgroundColor: '#6366f1',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
-  newBtnText: { color: '#fff', fontSize: 22, lineHeight: 24, fontWeight: '600' },
   logoutBtn: {
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: '#6366f1',
   },
   logoutText: { color: '#94a3b8', fontSize: 13, fontWeight: '500' },
 

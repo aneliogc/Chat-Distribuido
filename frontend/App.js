@@ -23,7 +23,7 @@ function RootNavigator() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#aeb5c5" />
+        <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
@@ -34,6 +34,7 @@ function RootNavigator() {
       headerTransparent: true,
       headerTitle: '',
       headerBackTitleVisible: false,
+      headerTintColor: '#6366f1',
     }}>
       {session ? (
         // Logado: telas do app.

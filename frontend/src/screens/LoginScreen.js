@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Platform,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import ChatIcon from '../components/ChatIcon';
@@ -87,6 +87,7 @@ export default function LoginScreen({ navigation, route }) {
             onChangeText={setPassword}
             onFocus={() => setFocusedField('pass')}
             onBlur={() => setFocusedField(null)}
+            onSubmitEditing={handleLogin}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <Text style={styles.toggle}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
@@ -168,6 +169,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: '#e2e8f0',
+    ...Platform.select({ web: { outlineStyle: 'none' } }),
   },
   toggle: { color: '#818cf8', fontSize: 12, fontWeight: '500', paddingLeft: 8 },
   error: { color: '#f87171', marginTop: 12, textAlign: 'center', fontSize: 13 },

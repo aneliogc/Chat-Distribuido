@@ -46,7 +46,7 @@ docker compose up -d --build
 ```
 
 - AuthService: http://localhost:5001/swagger
-- ChatService (via Nginx): http://localhost:8000 
+- ChatService (via Nginx): http://localhost:5002
 - PostgreSQL: localhost:5432 (user `chat`, pass `chat`)
 
 Para parar:
@@ -61,6 +61,24 @@ Para apagar dados:
 docker compose down -v
 ```
 
+## Como rodar (frontend)
+
+O app é em React Native + Expo. Com o backend já no ar (passo acima):
+
+```powershell
+cd frontend
+npm install
+npm run web        # abre no navegador (usa http://localhost:5001 e :5002)
+```
+
+Outras formas de abrir o app:
+
+```powershell
+npm start          # abre o Expo Dev Tools (escaneie o QR com o Expo Go)
+npm run android    # emulador/dispositivo Android
+npm run ios        # simulador iOS (macOS)
+```
+
 ## Estrutura
 
 ```
@@ -68,9 +86,10 @@ SD_TP_Final/
 ├── backend/
 │   ├── AuthService/         # ASP.NET Core - autenticação + cadastro
 │   └── ChatService/         # ASP.NET Core - SignalR + mensagens (Parte 2)
-├── mobile/                  # React Native + Expo (Parte 4)
-├── tests/                   # xUnit + k6 (Parte 5)
-├── nginx/                   # Configuração Nginx (Parte 3)
+├── frontend/                # React Native + Expo (Parte 4)
+├── infra/
+│   └── nginx/               # Configuração do Nginx / load balancer (Parte 3)
+├── docs/                    # Documentação das partes (PARTE1.md, ...)
 ├── docker-compose.yml
 └── README.md
 ```

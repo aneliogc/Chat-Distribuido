@@ -118,7 +118,7 @@ export default function ConversationsScreen({ navigation }) {
           <Text style={styles.headerTitle}>Suas conversas</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={signOut} >
+          <TouchableOpacity style={styles.logoutBtn} onPress={signOut}  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Text style={styles.logoutText}>Sair</Text>
           </TouchableOpacity>
         </View>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Platform, Keyboard,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useRealtime } from '../realtime/RealtimeContext';
@@ -39,6 +39,7 @@ export default function ChatScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
+  const [kbHeight, setKbHeight] = useState(0); // altura do teclado (px)
   const listRef = useRef(null);
 
   // 1) Carrega o historico via REST quando a tela abre.
@@ -69,6 +70,27 @@ export default function ChatScreen({ route, navigation }) {
     connection.on('ReceiveMessage', handler);
     return () => connection.off('ReceiveMessage', handler);
   }, [connection, conversationId]);
+
+  //    Acompanha o teclado: guarda a altura dele, que vira paddingBottom do
+  //    container (empurra a barra/mensagens pra cima sem cobrir).
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e) => setKbHeight(e.endCoordinates?.height ?? 0);
+    const onHide = () => setKbHeight(0);
+    const s1 = Keyboard.addListener(showEvt, onShow);
+    const s2 = Keyboard.addListener(hideEvt, onHide);
+    return () => { s1.remove(); s2.remove(); };
+  }, []);
+
+  //    Quando o teclado abre (kbHeight muda), rola a lista ate o fim DEPOIS que
+  //    o paddingBottom ja reposicionou o layout — senao o scroll ia pro fim antigo
+  //    e as ultimas mensagens ficavam escondidas atras da barra.
+  useEffect(() => {
+    if (kbHeight === 0) return;
+    const t = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
+    return () => clearTimeout(t);
+  }, [kbHeight]);
 
   async function send() {
     const content = text.trim();
@@ -134,10 +156,7 @@ export default function ChatScreen({ route, navigation }) {
           <ActivityIndicator color="#818cf8" />
         </View>
       ) : (
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <View style={[styles.flex, { paddingBottom: kbHeight }]}>
           <FlatList
             ref={listRef}
             data={messages}
@@ -172,7 +191,7 @@ export default function ChatScreen({ route, navigation }) {
               <Text style={styles.sendIcon}>➤</Text>
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       )}
     </View>
   );
@@ -231,6 +250,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     color: '#e2e8f0',
     fontSize: 15,
+    ...Platform.select({ web: { outlineStyle: 'none' } }),
   },
   sendBtn: {
     width: 44,

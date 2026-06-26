@@ -46,7 +46,7 @@ docker compose up -d --build
 ```
 
 - AuthService: http://localhost:5001/swagger
-- ChatService (via Nginx): http://localhost:8000 
+- ChatService (via Nginx): http://localhost:5002
 - PostgreSQL: localhost:5432 (user `chat`, pass `chat`)
 
 Para parar:
@@ -85,6 +85,24 @@ docker run --rm --network chat-distribuido_sd-net -v "${PWD}/backend:/src" -w /s
 
 - Integração: autenticar e, em seguida, enviar mensagem 1:1 entregue em tempo real e persistida; mensagem em grupo (1:N) entregue a todos; acesso ao chat sem token retorna 401; requisições REST distribuídas entre as réplicas.
 - Carga/concorrência: 12 usuários simultâneos (configurável via `LOAD_USERS`) fazem login ao mesmo tempo e trocam mensagens em grupo simultaneamente, validando entrega em tempo real, persistência e balanceamento entre as réplicas.
+
+## Como rodar (frontend)
+
+O app é em React Native + Expo. Com o backend já no ar (passo acima):
+
+```powershell
+cd frontend
+npm install
+npm run web        # abre no navegador (usa http://localhost:5001 e :5002)
+```
+
+Outras formas de abrir o app:
+
+```powershell
+npm start          # abre o Expo Dev Tools (escaneie o QR com o Expo Go)
+npm run android    # emulador/dispositivo Android
+npm run ios        # simulador iOS (macOS)
+```
 
 ## Estrutura
 

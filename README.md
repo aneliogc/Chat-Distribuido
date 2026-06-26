@@ -61,6 +61,31 @@ Para apagar dados:
 docker compose down -v
 ```
 
+## Testes
+
+Todos os testes em xUnit, executados via Docker (sem precisar de SDK local).
+
+### Unitários
+
+```powershell
+docker run --rm -v "${PWD}/backend:/src" -w /src mcr.microsoft.com/dotnet/sdk:8.0 dotnet test AuthService.Tests/AuthService.Tests.csproj
+docker run --rm -v "${PWD}/backend:/src" -w /src mcr.microsoft.com/dotnet/sdk:8.0 dotnet test ChatService.Tests/ChatService.Tests.csproj
+```
+
+- `AuthService.Tests`: registro, validação de credenciais de login e geração de JWT (EF Core InMemory).
+- `ChatService.Tests`: persistência de mensagens, conversas 1:1 e grupo, autorização (MongoDB efêmero via EphemeralMongo) + mapeamento de DTOs.
+
+### Integração e carga
+
+Caixa-preta (HTTP/SignalR) contra o stack em execução. Suba o stack antes (`docker compose up -d --build`) e rode anexando o container à rede do compose:
+
+```powershell
+docker run --rm --network chat-distribuido_sd-net -v "${PWD}/backend:/src" -w /src mcr.microsoft.com/dotnet/sdk:8.0 dotnet test IntegrationTests/IntegrationTests.csproj
+```
+
+- Integração: autenticar e, em seguida, enviar mensagem 1:1 entregue em tempo real e persistida; mensagem em grupo (1:N) entregue a todos; acesso ao chat sem token retorna 401; requisições REST distribuídas entre as réplicas.
+- Carga/concorrência: 12 usuários simultâneos (configurável via `LOAD_USERS`) fazem login ao mesmo tempo e trocam mensagens em grupo simultaneamente, validando entrega em tempo real, persistência e balanceamento entre as réplicas.
+
 ## Como rodar (frontend)
 
 O app é em React Native + Expo. Com o backend já no ar (passo acima):
@@ -85,11 +110,12 @@ npm run ios        # simulador iOS (macOS)
 SD_TP_Final/
 ├── backend/
 │   ├── AuthService/         # ASP.NET Core - autenticação + cadastro
-│   └── ChatService/         # ASP.NET Core - SignalR + mensagens (Parte 2)
-├── frontend/                # React Native + Expo (Parte 4)
-├── infra/
-│   └── nginx/               # Configuração do Nginx / load balancer (Parte 3)
-├── docs/                    # Documentação das partes (PARTE1.md, ...)
+│   ├── AuthService.Tests/   # xUnit - testes unitários do AuthService
+│   ├── ChatService/         # ASP.NET Core - SignalR + mensagens
+│   ├── ChatService.Tests/   # xUnit - testes unitários do ChatService
+│   └── IntegrationTests/    # xUnit - testes de integração e carga (stack ao vivo)
+├── frontend/                # React Native + Expo
+├── infra/nginx/             # Configuração Nginx (load balancer)
 ├── docker-compose.yml
 └── README.md
 ```
